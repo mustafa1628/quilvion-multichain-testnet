@@ -114,6 +114,12 @@ export default function BuyerDashboard() {
             <span className="font-bold text-sm hidden sm:block" style={{ fontFamily: 'var(--font-display)' }}>
               Quilvion <span className="text-white/30">· Sui</span>
             </span>
+            {/* ← YE ADD KARO */}
+            <a href="/merchant"
+              className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all hover:opacity-80"
+              style={{ background: 'rgba(77,162,255,0.08)', color: 'rgba(77,162,255,0.7)', border: '1px solid rgba(77,162,255,0.15)' }}>
+              🏪 Merchant Portal
+            </a>
           </div>
 
           {/* Tabs */}
