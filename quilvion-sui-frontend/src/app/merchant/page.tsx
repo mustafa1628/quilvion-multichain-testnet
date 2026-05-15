@@ -15,6 +15,8 @@ import { MerchantOnboard, type MerchantData } from '@/components/MerchantOnboard
 import { MerchantProductForm, type MerchantProduct } from '@/components/MerchantProductForm';
 import { MerchantStats } from '@/components/MerchantStats';
 import { SUI_CONFIG } from '@/lib/sui/constants';
+import { registerMerchant, getMerchantProfile, addProduct, fetchMerchantProducts, editProduct } from '@/lib/api';
+import { useEffect } from 'react';
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 type MerchantStatus = 'none' | 'pending' | 'approved';
@@ -35,6 +37,7 @@ const DUMMY_MERCHANT_ORDERS = [
   { id: 203, productName: 'Smart Contract Audit', amountUsdc: 299, status: 'COMPLETED', createdAt: '2025-05-05', buyerWallet: '0x9ab321...5678' },
 ];
 
+
 export default function MerchantDashboard() {
   const account = useCurrentAccount();
   const { mutate: signAndExecute } = useSignAndExecuteTransaction();
@@ -46,41 +49,121 @@ export default function MerchantDashboard() {
   const [showProductForm, setShowProductForm] = useState(false);
   const [onboardLoading, setOnboardLoading] = useState(false);
   const [productLoading, setProductLoading] = useState(false);
-
   const [myProducts, setMyProducts] = useState<LocalProduct[]>([]);
   const [txSuccess, setTxSuccess] = useState<string | null>(null);
   const [txError, setTxError] = useState<string | null>(null);
+  const [editingProduct, setEditingProduct] = useState<LocalProduct | null>(null);
 
   const walletAddress = account?.address ?? '';
 
   // Simulate onboarding submit (replace with real API/tx later)
+  useEffect(() => {
+    if (!account?.address) return;
+    getMerchantProfile(account.address).then(data => {
+      if (!data) return;
+      setMerchantStatus(data.status as MerchantStatus);
+      setMerchantData({
+        companyName: data.company_name,
+        description: data.description,
+        website: data.website || "",
+        category: data.category,
+        contactEmail: data.contact_email,
+      });
+      fetchMerchantProducts(account.address).then(products => {
+        setMyProducts(products.map((p: any) => ({
+          ...p,
+          priceUsdc: p.price_usdc,
+          deliveryInfo: p.delivery_info,
+          submittedAt: p.created_at?.split("T")[0] ?? "",
+        })));
+      });
+    });
+  }, [account?.address]);
+
+  // handleOnboardSubmit replace karo
   const handleOnboardSubmit = async (data: MerchantData) => {
     setOnboardLoading(true);
-    await new Promise(r => setTimeout(r, 1500)); // simulate API call
-    setMerchantData(data);
-    setMerchantStatus('approved'); // auto-approve on testnet for demo
-    setShowOnboard(false);
-    setOnboardLoading(false);
-    setTab('dashboard');
-    setTxSuccess(`Welcome, ${data.companyName}! Your merchant account is live.`);
+    try {
+      await registerMerchant({
+        wallet_address: walletAddress,
+        company_name: data.companyName,
+        description: data.description,
+        website: data.website,
+        category: data.category,
+        contact_email: data.contactEmail,
+      });
+      setMerchantData(data);
+      setMerchantStatus('approved');
+      setShowOnboard(false);
+      setTab('dashboard');
+      setTxSuccess(`Welcome, ${data.companyName}! Merchant account live hai.`);
+    } catch (e: any) {
+      setTxError(e.message);
+    } finally {
+      setOnboardLoading(false);
+    }
   };
 
-  // Simulate product submit
+  const handleEditSubmit = async (product: MerchantProduct) => {
+  if (!editingProduct?.id) return;
+  setProductLoading(true);
+  try {
+    await editProduct(Number(editingProduct.id), {
+      merchant_wallet: walletAddress,
+      name: product.name,
+      description: product.description,
+      price_usdc: product.priceUsdc,
+      category: product.category,
+      emoji: product.emoji,
+      tags: product.tags,
+      images: product.images || [],
+      delivery_info: product.deliveryInfo,
+    });
+    const updated = await fetchMerchantProducts(walletAddress);
+    setMyProducts(updated.map((p: any) => ({
+      ...p,
+      priceUsdc: p.price_usdc,
+      deliveryInfo: p.delivery_info,
+      submittedAt: p.created_at?.split("T")[0] ?? "",
+    })));
+    setEditingProduct(null);
+    setTxSuccess(`"${product.name}" updated!`);
+  } catch (e: any) {
+    setTxError(e.message);
+  } finally {
+    setProductLoading(false);
+  }
+};
+
+  // handleProductSubmit replace karo
   const handleProductSubmit = async (product: MerchantProduct) => {
     setProductLoading(true);
-    await new Promise(r => setTimeout(r, 1200));
-    const newProduct: LocalProduct = {
-      ...product,
-      id: `mp_${Date.now()}`,
-      status: 'approved', // auto-approve on testnet
-      submittedAt: new Date().toISOString().split('T')[0],
-      reviewCount: 0,
-      rating: 0,
-    };
-    setMyProducts(prev => [newProduct, ...prev]);
-    setShowProductForm(false);
-    setProductLoading(false);
-    setTxSuccess(`"${product.name}" is now live on the marketplace!`);
+    try {
+      await addProduct({
+        merchant_wallet: walletAddress,
+        name: product.name,
+        description: product.description,
+        price_usdc: product.priceUsdc,
+        category: product.category,
+        emoji: product.emoji,
+        tags: product.tags,
+        images: product.images || [],   // ← ye add karo
+        delivery_info: product.deliveryInfo,
+      });
+      const updated = await fetchMerchantProducts(walletAddress);
+      setMyProducts(updated.map((p: any) => ({
+        ...p,
+        priceUsdc: p.price_usdc,
+        deliveryInfo: p.delivery_info,
+        submittedAt: p.created_at?.split("T")[0] ?? "",
+      })));
+      setShowProductForm(false);
+      setTxSuccess(`"${product.name}" live hai marketplace pe!`);
+    } catch (e: any) {
+      setTxError(e.message);
+    } finally {
+      setProductLoading(false);
+    }
   };
 
   const clearToast = () => { setTxSuccess(null); setTxError(null); };
@@ -384,6 +467,12 @@ export default function MerchantDashboard() {
                          product.status === 'pending' ? '⏳ Under Review' : '✗ Rejected'}
                       </span>
                       <span className="text-xs text-white/25">{product.submittedAt}</span>
+                          <button
+                        onClick={() => setEditingProduct(product)}
+                        className="text-xs px-2.5 py-1 rounded-lg font-semibold transition-all hover:opacity-80"
+                        style={{ background: 'rgba(77,162,255,0.12)', color: '#4DA2FF' }}>
+                        Edit
+                      </button>
                     </div>
                   </motion.div>
                 ))}
@@ -414,6 +503,27 @@ export default function MerchantDashboard() {
           />
         )}
       </AnimatePresence>
+
+      <AnimatePresence>
+  {editingProduct && (
+    <MerchantProductForm
+      onClose={() => setEditingProduct(null)}
+      onSubmit={handleEditSubmit}
+      loading={productLoading}
+      editProduct={{
+        name: editingProduct.name,
+        description: editingProduct.description,
+        priceUsdc: editingProduct.priceUsdc,
+        category: editingProduct.category,
+        emoji: editingProduct.emoji,
+        tags: editingProduct.tags || [],
+        deliveryInfo: editingProduct.deliveryInfo,
+        images: editingProduct.images || [],
+        id: editingProduct.id,
+      }}
+    />
+  )}
+</AnimatePresence>
 
       {/* ── TESTNET FOOTER ── */}
       {account && (
