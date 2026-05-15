@@ -16,8 +16,10 @@ from app.routes import risk, llm, merchant, dispute, buyer
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """Load ML model on startup"""
+    """Tables create karo + ML model load karo on startup"""
+    from app.database import init_db
     from app.ml.model import load_model
+    init_db()
     load_model()
     print("✅ ML model loaded")
     yield
@@ -31,7 +33,6 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-# CORS — Next.js frontend
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -40,7 +41,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Routes
 app.include_router(risk.router,     prefix="/api/risk",     tags=["Risk & ML"])
 app.include_router(llm.router,      prefix="/api/llm",      tags=["LLM"])
 app.include_router(merchant.router, prefix="/api/merchant",  tags=["Merchant"])
