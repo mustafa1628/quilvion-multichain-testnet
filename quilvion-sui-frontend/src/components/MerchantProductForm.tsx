@@ -35,6 +35,7 @@ export function MerchantProductForm({ onClose, onSubmit, loading, editProduct }:
   const [tagInput, setTagInput] = useState('');
   const [errors, setErrors] = useState<Partial<Record<keyof MerchantProduct, string>>>({});
   const [uploadingImage, setUploadingImage] = useState(false);
+  const [generating, setGenerating] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const validate = () => {
@@ -202,6 +203,39 @@ export function MerchantProductForm({ onClose, onSubmit, loading, editProduct }:
               style={{ background: 'rgba(255,255,255,0.04)', borderColor: errors.description ? 'rgba(239,68,68,0.5)' : 'rgba(255,255,255,0.08)', color: '#fff' }} />
             {errors.description && <p className="text-xs text-red-400 mt-1">{errors.description}</p>}
           </div>
+
+          {/* ✨ AI Generate button */}
+<div className="flex justify-end mt-1">
+  <button
+    type="button"
+    onClick={async () => {
+      if (!form.name && !form.tags.length) return;
+      setGenerating(true);
+      try {
+        const res = await fetch(`${API}/api/merchant/generate-description`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            name: form.name,
+            category: form.category,
+            tags: form.tags,
+            price: form.priceUsdc,
+          }),
+        });
+        const data = await res.json();
+        if (data.description) setForm(p => ({ ...p, description: data.description }));
+      } catch {}
+      finally { setGenerating(false); }
+    }}
+    disabled={generating || (!form.name && !form.tags.length)}
+    className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg transition-all disabled:opacity-40"
+    style={{ background: 'rgba(77,162,255,0.12)', color: '#4DA2FF' }}>
+    {generating
+      ? <><Loader2 size={11} className="animate-spin" /> Generating...</>
+      : <>✨ AI Generate</>
+    }
+  </button>
+</div>
 
           {/* Price + Category */}
           <div className="grid grid-cols-2 gap-3">
