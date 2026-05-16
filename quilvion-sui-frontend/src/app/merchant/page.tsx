@@ -76,7 +76,10 @@ export default function MerchantDashboard() {
           deliveryInfo: p.delivery_info,
           submittedAt: p.created_at?.split("T")[0] ?? "",
         })));
-      });
+      }).catch(() => {});
+    })
+    .catch(() => {
+      // Backend down — silently ignore
     });
   }, [account?.address]);
 
@@ -178,10 +181,7 @@ export default function MerchantDashboard() {
 
           {/* Logo + nav back to buyer */}
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-lg flex items-center justify-center font-black text-sm"
-              style={{ background: 'linear-gradient(135deg,#4DA2FF,#6366f1)', fontFamily: 'var(--font-display)' }}>
-              Q
-            </div>
+          <img src="/logo.png" alt="Quilvion" className="w-8 h-8 rounded-lg object-contain" />
             <span className="font-bold text-sm hidden sm:block" style={{ fontFamily: 'var(--font-display)' }}>
               Quilvion <span className="text-white/30">· Merchant</span>
             </span>
