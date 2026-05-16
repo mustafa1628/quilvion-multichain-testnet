@@ -143,10 +143,7 @@ export default function BuyerDashboard() {
         style={{ background: 'rgba(5,5,15,0.85)' }}>
         <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between gap-4">
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-lg flex items-center justify-center font-black text-sm"
-              style={{ background: 'linear-gradient(135deg,#4DA2FF,#6366f1)', fontFamily: 'var(--font-display)' }}>
-              Q
-            </div>
+            <img src="/logo.png" alt="Quilvion" className="w-8 h-8 rounded-lg object-contain" />
             <span className="font-bold text-sm hidden sm:block" style={{ fontFamily: 'var(--font-display)' }}>
               Quilvion <span className="text-white/30">· Sui</span>
             </span>
