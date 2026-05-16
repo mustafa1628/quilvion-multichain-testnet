@@ -147,12 +147,12 @@ export function BuyModal({ product, walletAddress, onClose, onConfirm, loading }
 
                 {/* LLM explanation */}
                 {explLoading ? (
-                  <div className="flex items-center gap-2 text-xs text-white/30">
+                  <div className="flex items-center gap-2 text-xs text-white/30 border-t border-white/5 pt-2 mt-2">
                     <Loader2 size={11} className="animate-spin" />
-                    AI generating explanation...
+                    Analyzing...
                   </div>
                 ) : explanation && (
-                  <p className="text-xs text-white/50 leading-relaxed border-t border-white/5 pt-3 mt-2">
+                  <p className="text-xs text-white/50 leading-relaxed border-t border-white/5 pt-2 mt-2 italic">
                     {explanation}
                   </p>
                 )}
