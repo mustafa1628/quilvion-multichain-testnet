@@ -1,7 +1,7 @@
 // src/lib/api.ts
 // FastAPI backend client — ML risk scoring + Groq LLM
 
-import { API_BASE } from "./sui/constants";
+import { API_BASE, SUI_CONFIG } from "./sui/constants";
 
 // ── Risk Score (ML — fast) ────────────────────────────────────────────────────
 export async function getRiskScore(params: {
@@ -205,4 +205,48 @@ export async function editProduct(productId: number, data: {
   });
   if (!res.ok) throw new Error(await res.text());
   return res.json();
+}
+
+export async function fetchBuyerOrders(walletAddress: string) {
+  if (!walletAddress) return [];
+
+  try {
+    const res = await fetch('https://fullnode.testnet.sui.io:443', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        jsonrpc: '2.0',
+        id: 1,
+        method: 'suix_queryEvents',
+        params: [
+          {
+            MoveEventType: `${SUI_CONFIG.PACKAGE_ID}::events::OrderCreated`
+          },
+          null,
+          50,
+          true
+        ]
+      })
+    });
+
+    const data = await res.json();
+    const events = data?.result?.data ?? [];
+
+    // Sirf is buyer ke orders filter karo
+    const myOrders = events
+      .filter((e: any) => e.parsedJson?.buyer === walletAddress)
+      .map((e: any) => ({
+        id: Number(e.parsedJson?.order_id ?? 0),
+        productName: `Order #${e.parsedJson?.order_id}`,  // product name baad mein DB se match karenge
+        amountUsdc: Number(e.parsedJson?.amount ?? 0) / 1_000_000,
+        status: 'PENDING',
+        createdAt: new Date(Number(e.timestampMs)).toISOString().split('T')[0],
+        txDigest: e.id?.txDigest ?? '',
+        merchantWallet: e.parsedJson?.merchant ?? '',
+      }));
+
+    return myOrders;
+  } catch {
+    return [];
+  }
 }
