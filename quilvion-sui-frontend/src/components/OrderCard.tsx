@@ -1,6 +1,6 @@
 'use client';
 import { motion } from 'framer-motion';
-import { Shield, AlertTriangle, CheckCircle, Clock, Loader2, ExternalLink } from 'lucide-react';
+import { Shield, AlertTriangle, CheckCircle, Clock, Loader2, ExternalLink, Check } from 'lucide-react';
 
 interface Order {
   id: number;
@@ -21,9 +21,15 @@ const STATUS_CONFIG: Record<string, { color: string; bg: string; icon: any; labe
   REFUNDED:        { color: '#AB9FF2', bg: 'rgba(171,159,242,0.1)', icon: CheckCircle,   label: 'Refunded' },
 };
 
-export function OrderCard({ order, onDispute, loading }: {
+export function OrderCard({ 
+  order, 
+  onDispute, 
+  onRelease, 
+  loading 
+}: {
   order: Order;
   onDispute: () => void;
+  onRelease?: (orderId: number) => void;
   loading: boolean;
 }) {
   const cfg = STATUS_CONFIG[order.status] ?? STATUS_CONFIG.PENDING;
@@ -67,19 +73,40 @@ export function OrderCard({ order, onDispute, loading }: {
         </div>
       </div>
 
+      {/* Actions for PENDING Orders */}
       {order.status === 'PENDING' && (
-        <div className="mt-3 flex items-center gap-2 pt-3 border-t border-white/5">
-          <div className="flex items-center gap-1.5 text-xs text-white/35 flex-1">
-            <Shield size={11} className="text-yellow-400 flex-shrink-0" />
-            Funds locked in escrow — waiting for delivery
-          </div>
+        <div className="mt-4 pt-4 border-t border-white/5 flex flex-col sm:flex-row gap-2">
           <button
             onClick={onDispute}
             disabled={loading}
-            className="flex-shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all hover:bg-red-500/20 disabled:opacity-40"
-            style={{ background: 'rgba(239,68,68,0.1)', color: '#ef4444' }}>
-            {loading ? <Loader2 size={11} className="animate-spin" /> : 'Raise Dispute'}
+            className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-xs font-semibold transition-all hover:bg-red-500/20 disabled:opacity-50"
+            style={{ background: 'rgba(239,68,68,0.12)', color: '#ef4444', border: '1px solid rgba(239,68,68,0.2)' }}>
+            {loading ? <Loader2 size={14} className="animate-spin" /> : <AlertTriangle size={14} />}
+            Raise Dispute
           </button>
+
+          {onRelease && (
+            <button
+              onClick={() => onRelease(order.id)}
+              disabled={loading}
+              className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-xs font-semibold transition-all hover:bg-emerald-600 disabled:opacity-50"
+              style={{ 
+                background: 'linear-gradient(135deg, #10b981, #34d399)', 
+                color: '#fff',
+                boxShadow: '0 4px 15px rgba(16, 185, 129, 0.3)'
+              }}>
+              {loading ? <Loader2 size={14} className="animate-spin" /> : <Check size={14} />}
+              ✅ Release Escrow
+            </button>
+          )}
+        </div>
+      )}
+
+      {/* Info text */}
+      {order.status === 'PENDING' && (
+        <div className="mt-3 text-[10px] text-white/40 flex items-center gap-1.5">
+          <Shield size={11} className="text-yellow-400" />
+          Funds are in escrow. Click "Release Escrow" after you receive the product.
         </div>
       )}
     </motion.div>
