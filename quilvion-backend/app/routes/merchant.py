@@ -100,7 +100,7 @@ def add_product(data: ProductCreate, db: Session = Depends(get_db)):
     ).first()
     if not merchant:
         raise HTTPException(status_code=404, detail="Please Register a Merchant")
-    if merchant.status != "pending":
+    if merchant.status != "approved":
         raise HTTPException(status_code=403, detail="Merchant is not approved yet")
 
     product = Product(
