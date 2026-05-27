@@ -210,9 +210,21 @@ export async function fetchProducts(category?: string) {
   const url = category && category !== "All"
     ? `${API}/api/buyer/products?category=${encodeURIComponent(category)}`
     : `${API}/api/buyer/products`;
+  
+  console.log('[fetchProducts] Calling:', url);
+  
   const res = await fetch(url);
-  if (!res.ok) throw new Error("Failed to fetch products");
+  
+  console.log('[fetchProducts] Response status:', res.status);
+  
+  if (!res.ok) {
+    const errorText = await res.text();
+    console.error('[fetchProducts] Error response:', errorText.substring(0, 200));
+    throw new Error(`Failed to fetch products (${res.status}): ${errorText.substring(0, 100)}`);
+  }
+  
   const data = await res.json();
+  console.log('[fetchProducts] Got data:', data.length, 'products');
 
   return data.map((p: any) => ({
     id: p.id,
@@ -317,7 +329,7 @@ export async function fetchBuyerOrders(walletAddress: string) {
           productId: Number(productId),
           productName: backendOrder?.product_name || product?.name || `Order #${orderId}`,
           amountUsdc: Number(e.parsedJson?.amount ?? 0) / 1_000_000,
-          status: backendOrder?.status || status,
+          status: status || backendOrder?.status,  // ✅ BLOCKCHAIN STATUS takes priority
           riskScore,
           createdAt: new Date(Number(e.timestampMs)).toISOString().split('T')[0],
           txDigest: e.id?.txDigest ?? '',
@@ -330,6 +342,32 @@ export async function fetchBuyerOrders(walletAddress: string) {
   } catch (err) {
     console.error("fetchBuyerOrders error:", err);
     return [];
+  }
+}
+
+export async function fetchBuyerStats(walletAddress: string) {
+  if (!walletAddress) return null;
+
+  try {
+    const res = await fetch(`${API}/api/buyer/stats/${walletAddress}`);
+    if (!res.ok) return null;
+    return res.json();
+  } catch (err) {
+    console.error("fetchBuyerStats error:", err);
+    return null;
+  }
+}
+
+export async function fetchMerchantStats(walletAddress: string) {
+  if (!walletAddress) return null;
+
+  try {
+    const res = await fetch(`${API}/api/merchant/stats/${walletAddress}`);
+    if (!res.ok) return null;
+    return res.json();
+  } catch (err) {
+    console.error("fetchMerchantStats error:", err);
+    return null;
   }
 }
 

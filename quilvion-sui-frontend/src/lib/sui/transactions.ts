@@ -14,6 +14,14 @@ export function buildCreateOrder(
   amountUsdc: number,        // display value e.g. 50.0
   usdcCoinObjectId: string,  // Coin<USDC> object owned by buyer
 ) {
+  // Convert display USDC to micro-units (6 decimals)
+  const amountMicroUnits = toUsdc(amountUsdc);
+
+  // CRITICAL: Split coin to exact amount before passing to contract
+  const [coin] = tx.splitCoins(tx.object(usdcCoinObjectId), [
+    tx.pure.u64(amountMicroUnits),
+  ]);
+
   tx.moveCall({
     target: `${PKG}::commerce_core::create_order`,
     arguments: [
@@ -25,7 +33,7 @@ export function buildCreateOrder(
       tx.pure.u64(productId),
       tx.pure.address(merchantWallet),
       tx.pure.u8(0),  // PRODUCT_TYPE_DIGITAL
-      tx.object(usdcCoinObjectId),
+      coin,  // Use only the split coin (exact amount needed)
       tx.object(SUI_CONFIG.CLOCK),
     ],
   });
