@@ -15,7 +15,7 @@ import { MerchantOnboard, type MerchantData } from '@/components/MerchantOnboard
 import { MerchantProductForm, type MerchantProduct } from '@/components/MerchantProductForm';
 import { MerchantStats } from '@/components/MerchantStats';
 import { SUI_CONFIG } from '@/lib/sui/constants';
-import { registerMerchant, getMerchantProfile, addProduct, fetchMerchantProducts, editProduct, fetchMerchantOrders } from '@/lib/api';
+import { registerMerchant, getMerchantProfile, addProduct, fetchMerchantProducts, editProduct, fetchMerchantOrders, fetchProducts } from '@/lib/api';
 import { buildDeliverDigitalProduct } from '@/lib/sui/transactions';
 import { useEffect } from 'react';
 
@@ -56,6 +56,8 @@ export default function MerchantDashboard() {
   const [txSuccess, setTxSuccess] = useState<string | null>(null);
   const [txError, setTxError] = useState<string | null>(null);
   const [editingProduct, setEditingProduct] = useState<LocalProduct | null>(null);
+  const [marketplaceProducts, setMarketplaceProducts] = useState<any[]>([]);
+  const [marketplaceLoading, setMarketplaceLoading] = useState(false);
 
   const walletAddress = account?.address ?? '';
 
@@ -88,6 +90,22 @@ export default function MerchantDashboard() {
       setMerchantOrders(orders);
     } catch (err) {}
   };
+
+  // Load marketplace products on mount
+  useEffect(() => {
+    const loadMarketplaceProducts = async () => {
+      setMarketplaceLoading(true);
+      try {
+        const products = await fetchProducts();
+        setMarketplaceProducts(products);
+      } catch (err) {
+        console.error('Failed to load marketplace products:', err);
+      } finally {
+        setMarketplaceLoading(false);
+      }
+    };
+    loadMarketplaceProducts();
+  }, []);
 
   useEffect(() => {
     loadMerchantData();
@@ -356,7 +374,7 @@ export default function MerchantDashboard() {
             {/* Stats */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-8">
               {[
-                { label: 'Products', value: PRODUCTS.length, icon: ShoppingBag, color: '#4DA2FF' },
+                { label: 'Products', value: marketplaceProducts.length, icon: ShoppingBag, color: '#4DA2FF' },
                 { label: 'Escrow Protected', value: '100%', icon: Shield, color: '#10b981' },
                 { label: 'Avg Rating', value: '4.8★', icon: Star, color: '#f59e0b' },
                 { label: 'Chain', value: 'Sui', icon: Zap, color: '#AB9FF2' },
@@ -374,8 +392,17 @@ export default function MerchantDashboard() {
 
             {/* Product grid (view-only) */}
             <h2 className="text-base font-bold text-white/60 mb-4">All Products on Marketplace</h2>
+            {marketplaceLoading ? (
+              <div className="flex items-center justify-center py-12">
+                <Loader2 size={24} className="animate-spin text-blue-400" />
+              </div>
+            ) : marketplaceProducts.length === 0 ? (
+              <div className="text-center py-12 text-white/40">
+                <p>No products available yet</p>
+              </div>
+            ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {PRODUCTS.map((product, i) => (
+              {marketplaceProducts.map((product, i) => (
                 <motion.div key={product.id}
                   initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: i * 0.07 }}
@@ -399,7 +426,7 @@ export default function MerchantDashboard() {
                   </div>
 
                   <div className="flex flex-wrap gap-1 mb-3">
-                    {product.tags.slice(0, 2).map(tag => (
+                    {product.tags.slice(0, 2).map((tag: string) => (
                       <span key={tag} className="text-xs px-2 py-0.5 rounded-full"
                         style={{ background: 'rgba(77,162,255,0.1)', color: '#4DA2FF' }}>
                         {tag}
@@ -419,6 +446,7 @@ export default function MerchantDashboard() {
                 </motion.div>
               ))}
             </div>
+            )}
           </motion.div>
         )}
 
@@ -494,7 +522,7 @@ export default function MerchantDashboard() {
                     </div>
 
                     <div className="flex flex-wrap gap-1 mb-3">
-                      {product.tags.slice(0, 3).map(tag => (
+                      {product.tags.slice(0, 3).map((tag: string) => (
                         <span key={tag} className="text-xs px-2 py-0.5 rounded-full"
                           style={{ background: 'rgba(77,162,255,0.1)', color: '#4DA2FF' }}>
                           {tag}

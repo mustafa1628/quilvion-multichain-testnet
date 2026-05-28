@@ -80,3 +80,16 @@ export function buildReleaseEscrow(tx: Transaction, orderId: number) {
     ],
   });
 }
+
+// ── deliver_digital_product (Merchant provides delivery info) ──────────────────
+export function buildDeliverDigitalProduct(tx: Transaction, orderId: number, deliveryInfo: string) {
+  tx.moveCall({
+    target: `${SUI_CONFIG.PACKAGE_ID}::commerce_core::deliver_digital_product`,
+    arguments: [
+      tx.object(SUI_CONFIG.COMMERCE_CORE),
+      tx.pure.u64(orderId),
+      tx.pure.string(deliveryInfo),
+      tx.object(SUI_CONFIG.CLOCK),
+    ],
+  });
+}
